@@ -15,7 +15,7 @@ app.get('/api/v1/QA_transaction', async (req, res) => {
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
-                {"role": "user", "content": "ฉันชอบศิลปะ แนะนำสถานที่หน่อย"}
+                {"role": "user", "content": "ฉันชอบอาหาร แนะนำสถานที่หน่อย"}
             ],
             max_tokens: 300,
         });
