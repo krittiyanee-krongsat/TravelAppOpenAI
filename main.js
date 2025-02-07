@@ -13,7 +13,7 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'travelapp',
+    database: 'travel_app',
 });
 
 // สร้าง OpenAI instance
