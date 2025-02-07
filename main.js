@@ -44,7 +44,7 @@ app.get('/QA_transaction', async (req, res) => {
 
             res.json({
                 success: true,
-                analysis: completion.choices[0].message.content
+                analysis: completion.choices[0].message.content //ข้อความที่โมเดลสร้างขึ้นเพื่อตอบกลับ จาก OpenAI API
             });
         } catch (error) {
             console.error("Error:", error);
