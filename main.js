@@ -23,14 +23,14 @@ const openai = new OpenAI({
 
 // API ดึงข้อมูลจากฐานข้อมูลและส่งให้ OpenAI วิเคราะห์
 app.get('/QA_transaction', async (req, res) => {
-    connection.query('SELECT * FROM qa_transaction', async (err, results) => {
+    connection.query('SELECT qa_transaction_id, trip, distance, budget, location_interest, activity_interest FROM qa_transaction ORDER BY qa_transaction_id DESC LIMIT 1', async (err, results) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
         
         // แปลงข้อมูลจากฐานข้อมูลให้เป็นข้อความสำหรับ OpenAI วิเคราะห์
         const dataForAI = results.map(row => {
-            return `Trip: ${row.trip}, Distance: ${row.distance}, Budget: ${row.budget}`;
+            return `ID: ${row.qa_transaction_id}, Trip: ${row.trip}, Distance: ${row.distance}, Budget: ${row.budget}, LocationInterest: ${row.location_interest}, ActivityInterest: ${row.activity_interest}`;
         }).join("\n");
 
         try {
@@ -38,7 +38,15 @@ app.get('/QA_transaction', async (req, res) => {
             const completion = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [
-                    { "role": "user", "content": `แนะนำสถานที่ภายในกรุงเทพเลือกมา 5 ข้อ:\n${dataForAI}` }
+                    { "role": "user", "content": `ฉันเป็นเพื่อนของคุณที่อยู่ในกรุงเทพฯและฉันอยากช่วยแนะนำสถานที่เที่ยวที่เหมาะกับคุณมากที่สุดขอให้คุณตอบคำถามต่อไปนี้เพื่อให้ฉันเลือกสถานที่ที่ตรงกับความต้องการของคุณมากที่สุด
+                                                    ตอนแสดงผลลัพธ์ให้บอกคำตอบที่เลือกมาด้วยว่าผู้ใช้เลือกคำตอบอะไรบ้าง
+                                                    และแนะนำมา 5 สถานที่โดยสถานที่จะมีที่อยู่, วันเวลาทำการและรายละเอียดของสถานที่
+                                                    คำถามสำหรับเลือกสถานที่เที่ยว
+                                                    1. คุณเดินทางมากับใคร?
+                                                    2. คุณต้องการเดินทางไกลแค่ไหนจากตำแหน่งปัจจุบันของคุณ? (ระบบจะใช้ GPS คำนวณระยะทางให้)
+                                                    3. งบประมาณที่คุณตั้งไว้สำหรับทริปนี้เท่าไหร่?
+                                                    4. คุณสนใจสถานที่ประเภทไหน? (เลือกได้มากกว่า 1 ข้อ)
+                                                    5. คุณชอบทำกิจกรรมแนวไหน? (เลือกได้มากกว่า 1 ข้อ)\n${dataForAI}` }
                 ],
             });
 
