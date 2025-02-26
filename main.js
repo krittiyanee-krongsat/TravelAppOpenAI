@@ -11,6 +11,14 @@ const morgan = require('morgan');
 const app = express();
 const port = process.env.PORT || 3000;
 
+//Swagger
+const swaggerUi = require('swagger-ui-express');
+const fs = require('fs');
+const YAML = require('yaml');
+const file = fs.readFileSync('./swagger.yaml', 'utf8');
+const swaggerDocument = YAML.parse(file);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // Middleware
 app.use(express.json());
 app.use(cors({
@@ -55,9 +63,12 @@ app.post('/qa_transaction', async (req, res) => {
             return res.status(400).json({ success: false, message: "Missing required fields." });
         }
 
+        // แปลง activity_interest เป็น JSON string เป็น Array
+        const activityInterestJSON = JSON.stringify(activity_interest);
+
         // บันทึกข้อมูลลงในฐานข้อมูล
         const sql = 'INSERT INTO qa_transaction (latitude, longitude, trip, distance, budget, location_interest, activity_interest) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        await pool.query(sql, [latitude, longitude, trip, distance, budget, location_interest, activity_interest]);
+        await pool.query(sql, [latitude, longitude, trip, distance, budget, location_interest, activityInterestJSON]);
 
         res.json({
             success: true,
@@ -82,6 +93,9 @@ app.get('/qa_transaction', async (req, res) => {
 
         const row = results[0];
 
+        // แปลง activity_interest จาก JSON string เป็น Array
+        const activityInterestArray = JSON.parse(row.activity_interest);
+
         // ✅ เตรียมข้อความสำหรับ OpenAI
         const userInput = `
         ข้อมูลของผู้ใช้:
@@ -90,7 +104,7 @@ app.get('/qa_transaction', async (req, res) => {
         - ระยะทางที่ต้องการ: ${row.distance}
         - งบประมาณ: ${row.budget}
         - ประเภทสถานที่ที่สนใจ: ${row.location_interest}
-        - กิจกรรมที่สนใจ: ${row.activity_interest}
+        - กิจกรรมที่สนใจ: ${activityInterestArray.join(', ')}
         - ตำแหน่งพิกัด: ${row.latitude}, ${row.longitude}
         
         ช่วยแนะนำ 5 สถานที่ท่องเที่ยวที่เหมาะสม โดยแสดง:

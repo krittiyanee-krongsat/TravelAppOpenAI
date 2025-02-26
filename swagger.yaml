@@ -1,0 +1,154 @@
+openapi: 3.0.0
+info:
+  title: Travel Recommendation API
+  description: API สำหรับบันทึกข้อมูลการท่องเที่ยวและรับคำแนะนำสถานที่ท่องเที่ยวจาก OpenAI
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local server
+paths:
+  /qa_transaction:
+    post:
+      summary: บันทึกข้อมูลพิกัดและตัวเลือก
+      tags: [QA]
+      description: บันทึกข้อมูลการท่องเที่ยว เช่น พิกัด, ระยะทาง, งบประมาณ, ประเภทสถานที่, และกิจกรรมที่สนใจ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                  description: พิกัดละติจูด
+                longitude:
+                  type: number
+                  description: พิกัดลองจิจูด
+                trip:
+                  type: string
+                  description: ประเภทการเดินทาง (เช่น เดินทางคนเดียว, ครอบครัว, เพื่อน)
+                distance:
+                  type: string
+                  description: ระยะทางที่ต้องการ
+                budget:
+                  type: string
+                  description: งบประมาณ
+                location_interest:
+                  type: string
+                  description: ประเภทสถานที่ที่สนใจ
+                activity_interest:
+                  type: array
+                  description: กิจกรรมที่สนใจ (สามารถเลือกได้หลายกิจกรรม)
+                  items:
+                    type: string
+              example:
+                latitude: 13.7563
+                longitude: 100.5018
+                trip: "ครอบครัว"
+                distance: "ไม่เกิน 100 กิโลเมตร"
+                budget: "5000 บาท"
+                location_interest: "ทะเล, ภูเขา"
+                activity_interest: ["พักผ่อน", "ถ่ายรูป"]
+      responses:
+        '200':
+          description: บันทึกข้อมูลสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Transaction saved successfully!"
+                  data:
+                    type: object
+                    properties:
+                      latitude:
+                        type: number
+                      longitude:
+                        type: number
+                      trip:
+                        type: string
+                      distance:
+                        type: string
+                      budget:
+                        type: string
+                      location_interest:
+                        type: string
+                      activity_interest:
+                        type: array
+                        items:
+                          type: string
+        '400':
+          description: ข้อมูลไม่ครบถ้วน
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Missing required fields."
+        '500':
+          description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Internal server error."
+    get:
+      summary: ดึงข้อมูลล่าสุดและรับคำแนะนำจาก OpenAI
+      tags: [QA]
+      description: ดึงข้อมูลการท่องเที่ยวล่าสุดและวิเคราะห์ด้วย OpenAI เพื่อรับคำแนะนำสถานที่ท่องเที่ยว
+      responses:
+        '200':
+          description: ดึงข้อมูลและวิเคราะห์สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  recommendations:
+                    type: string
+        '404':
+          description: ไม่พบข้อมูล
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No data found."
+        '500':
+          description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Internal server error."
