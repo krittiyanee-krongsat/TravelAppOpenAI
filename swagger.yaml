@@ -32,7 +32,7 @@ paths:
                   type: string
                   description: ระยะทางที่ต้องการ
                 budget:
-                  type: string
+                  type: number
                   description: งบประมาณ
                 location_interest:
                   type: string
@@ -42,7 +42,7 @@ paths:
                   description: กิจกรรมที่สนใจ (สามารถเลือกได้หลายกิจกรรม)
                   items:
                     type: string
-                    
+
       responses:
         '200':
           description: บันทึกข้อมูลสำเร็จ
@@ -69,7 +69,7 @@ paths:
                       distance:
                         type: string
                       budget:
-                        type: string
+                        type: number
                       location_interest:
                         type: string
                       activity_interest:

@@ -56,17 +56,14 @@ app.post('/qa_transaction', async (req, res) => {
     try {
         const { latitude, longitude, trip, distance, budget, location_interest, activity_interest } = req.body;
 
-        // ตรวจสอบข้อมูลและประเภทข้อมูล
+        // ตรวจสอบข้อมูล
         if (
-            typeof latitude !== 'number' || typeof longitude !== 'number' ||
-            typeof trip !== 'string' || typeof distance !== 'number' ||
-            typeof budget !== 'number' || typeof location_interest !== 'string' ||
-            !Array.isArray(activity_interest)
+            !latitude || !longitude || !trip || !distance || !budget || !location_interest || !activity_interest
         ) {
-            return res.status(400).json({ success: false, message: "Invalid data types or missing required fields." });
+            return res.status(400).json({ success: false, message: "Missing required fields." });
         }
 
-        // แปลง activity_interest เป็น JSON string
+        // แปลง activity_interest เป็น JSON string เป็น Array
         const activityInterestJSON = JSON.stringify(activity_interest);
 
         // บันทึกข้อมูลลงในฐานข้อมูล
@@ -88,7 +85,7 @@ app.post('/qa_transaction', async (req, res) => {
 app.get('/qa_transaction', async (req, res) => {
     try {
         // ดึงข้อมูลล่าสุด
-        const [qa_results] = await pool.query('SELECT qa_transaction_id, trip, distance, budget, location_interest, activity_interest, latitude, longitude FROM qa_transaction ORDER BY qa_transaction_id DESC LIMIT 1');
+        const qa_results = await pool.query('SELECT qa_transaction_id, trip, distance, budget, location_interest, activity_interest, latitude, longitude FROM qa_transaction ORDER BY qa_transaction_id DESC LIMIT 1');
 
         if (qa_results.length === 0) {
             return res.status(404).json({ success: false, message: "No data found." });
@@ -96,8 +93,8 @@ app.get('/qa_transaction', async (req, res) => {
 
         const qa_row = qa_results[0];
 
-        // แปลง activity_interest จาก JSON string เป็น Array
-        const activityInterestArray = JSON.parse(qa_row.activity_interest);
+         // แปลง activity_interest จาก JSON string เป็น Array
+         const activityInterestArray = JSON.parse(qa_row.activity_interest);
 
         // ✅ เตรียมข้อความสำหรับ OpenAI
         const userInput = `
@@ -119,17 +116,12 @@ app.get('/qa_transaction', async (req, res) => {
 
         // ✅ ส่งข้อมูลให้ OpenAI วิเคราะห์
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4-turbo",
             messages: [
-                { role: "system", content: "คุณเป็นผู้ช่วยแนะนำสถานที่ท่องเที่ยวโดยอิงจากข้อมูลผู้ใช้" },
-                { role: "user", content: userInput }
+                { "role": "system", "content": "คุณเป็นผู้ช่วยแนะนำสถานที่ท่องเที่ยวโดยอิงจากข้อมูลผู้ใช้และบอกว่าอยู่เขตในของกรุงเทพมหานคร" },
+                { "role": "user", "content": userInput }
             ],
         });
-
-        // ตรวจสอบว่ามีคำตอบจาก OpenAI หรือไม่
-        if (!completion.choices || completion.choices.length === 0) {
-            throw new Error("No response from OpenAI.");
-        }
 
         res.json({
             success: true,
