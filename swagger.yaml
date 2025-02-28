@@ -42,14 +42,7 @@ paths:
                   description: กิจกรรมที่สนใจ (สามารถเลือกได้หลายกิจกรรม)
                   items:
                     type: string
-              example:
-                latitude: 13.7563
-                longitude: 100.5018
-                trip: "ครอบครัว"
-                distance: "ไม่เกิน 100 กิโลเมตร"
-                budget: "5000 บาท"
-                location_interest: "ทะเล, ภูเขา"
-                activity_interest: ["พักผ่อน", "ถ่ายรูป"]
+                    
       responses:
         '200':
           description: บันทึกข้อมูลสำเร็จ

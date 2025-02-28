@@ -95,7 +95,7 @@ app.get('/qa_transaction', async (req, res) => {
 
         // แปลง activity_interest จาก JSON string เป็น Array
         const activityInterestArray = JSON.parse(row.activity_interest);
-
+        
         // ✅ เตรียมข้อความสำหรับ OpenAI
         const userInput = `
         ข้อมูลของผู้ใช้:
