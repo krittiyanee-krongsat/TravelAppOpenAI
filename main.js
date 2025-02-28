@@ -116,7 +116,7 @@ app.get('/qa_transaction', async (req, res) => {
 
         // ✅ ส่งข้อมูลให้ OpenAI วิเคราะห์
         const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo",
+            model: "gpt-4o",
             messages: [
                 { "role": "system", "content": "คุณเป็นผู้ช่วยแนะนำสถานที่ท่องเที่ยวโดยอิงจากข้อมูลผู้ใช้และบอกว่าอยู่เขตในของกรุงเทพมหานคร" },
                 { "role": "user", "content": userInput }
