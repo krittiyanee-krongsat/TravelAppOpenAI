@@ -9,8 +9,9 @@ servers:
 paths:
   /qa_transaction:
     post:
-      summary: บันทึกข้อมูลการท่องเที่ยว
-      description: บันทึกข้อมูลการท่องเที่ยวลงในตาราง qa_transaction
+      summary: บันทึกข้อมูลคำตอบจากผู้ใช้
+      tags: [QA]
+      description: บันทึกข้อมูลคำตอบจากผู้ใช้ลงในตาราง qa_transaction
       requestBody:
         required: true
         content:
