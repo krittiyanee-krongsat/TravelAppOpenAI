@@ -9,9 +9,8 @@ servers:
 paths:
   /qa_transaction:
     post:
-      summary: บันทึกข้อมูลพิกัดและตัวเลือก
-      tags: [QA]
-      description: บันทึกข้อมูลการท่องเที่ยว เช่น พิกัด, ระยะทาง, งบประมาณ, ประเภทสถานที่, และกิจกรรมที่สนใจ
+      summary: บันทึกข้อมูลการท่องเที่ยว
+      description: บันทึกข้อมูลการท่องเที่ยวลงในตาราง qa_transaction
       requestBody:
         required: true
         content:
@@ -21,31 +20,30 @@ paths:
               properties:
                 latitude:
                   type: number
-                  description: พิกัดละติจูด
+                  description: ละติจูดของผู้ใช้
                 longitude:
                   type: number
-                  description: พิกัดลองจิจูด
-                trip:
-                  type: string
-                  description: ประเภทการเดินทาง (เช่น เดินทางคนเดียว, ครอบครัว, เพื่อน)
-                distance:
-                  type: string
-                  description: ระยะทางที่ต้องการ
+                  description: ลองจิจูดของผู้ใช้
+                trip_id:
+                  type: integer
+                  description: รหัสการเดินทาง
+                distance_id:
+                  type: integer
+                  description: รหัสระยะทาง
                 budget:
                   type: number
                   description: งบประมาณ
-                location_interest:
-                  type: string
-                  description: ประเภทสถานที่ที่สนใจ
-                activity_interest:
+                location_interest_id:
+                  type: number
+                  description: รหัสสถานที่ที่สนใจ
+                activity_interest_id:
                   type: array
-                  description: กิจกรรมที่สนใจ (สามารถเลือกได้หลายกิจกรรม)
                   items:
                     type: string
-
+                  description: รหัสกิจกรรมที่สนใจ (เก็บเป็น Array)
       responses:
-        '200':
-          description: บันทึกข้อมูลสำเร็จ
+        200:
+          description: สำเร็จ
           content:
             application/json:
               schema:
@@ -53,95 +51,34 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: "Transaction saved successfully!"
                   data:
                     type: object
                     properties:
+                      qa_transaction_id:
+                        type: integer
+                        description: รหัสธุรกรรมที่สร้างขึ้น
+                      account_id:
+                        type: integer
+                        description: รหัสบัญชีที่สร้างอัตโนมัติให้ตรงกับ qa_transaction_id
                       latitude:
                         type: number
                       longitude:
                         type: number
-                      trip:
-                        type: string
-                      distance:
-                        type: string
+                      trip_id:
+                        type: integer
+                      distance_id:
+                        type: integer
                       budget:
                         type: number
-                      location_interest:
-                        type: string
-                      activity_interest:
+                      location_interest_id:
+                        type: number
+                      activity_interest_id:
                         type: array
                         items:
                           type: string
-        '400':
+        400:
           description: ข้อมูลไม่ครบถ้วน
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: "Missing required fields."
-        '500':
-          description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Internal server error."
-    get:
-      summary: ดึงข้อมูลล่าสุดและรับคำแนะนำจาก OpenAI
-      tags: [QA]
-      description: ดึงข้อมูลการท่องเที่ยวล่าสุดและวิเคราะห์ด้วย OpenAI เพื่อรับคำแนะนำสถานที่ท่องเที่ยว
-      responses:
-        '200':
-          description: ดึงข้อมูลและวิเคราะห์สำเร็จ
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  recommendations:
-                    type: string
-        '404':
-          description: ไม่พบข้อมูล
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: "No data found."
-        '500':
-          description: ข้อผิดพลาดภายในเซิร์ฟเวอร์
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Internal server error."
+        500:
+          description: เกิดข้อผิดพลาดในการประมวลผล
