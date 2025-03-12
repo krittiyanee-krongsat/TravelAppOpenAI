@@ -10,6 +10,7 @@ const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const fs = require('fs');
 const YAML = require('yaml');
+const { connect } = require("http2");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -79,6 +80,7 @@ async function getTransactionData() {
             qa_picture.theme,
             qa_transaction.longitude,
             qa_transaction.latitude
+        ORDER BY qa_transaction.qa_transaction_id DESC
         LIMIT 1;
     `;
 
@@ -128,6 +130,46 @@ async function saveResultsToDb(results) {
         ]);
     }
 }*/
+
+// ✅ดึงข้อมูล qa_transaction
+app.get('/qa_transaction', async (req, res) => {
+    const query = `
+         SELECT
+            qa_transaction.qa_transaction_id,
+            qa_transaction.account_id,
+            qa_traveling.traveling_choice,
+            qa_distance.distance_km,
+            qa_transaction.budget,
+            qa_picture.theme AS location_interest,
+            GROUP_CONCAT(qa_activity_picture.theme) AS activity_interest,
+            qa_transaction.longitude,
+            qa_transaction.latitude
+        FROM qa_transaction
+        LEFT JOIN qa_traveling ON qa_transaction.trip_id = qa_traveling.traveling_id
+        LEFT JOIN qa_distance ON qa_transaction.distance_id = qa_distance.distance_id
+        LEFT JOIN qa_picture ON qa_transaction.location_interest_id = qa_picture.picture_id
+        LEFT JOIN qa_picture AS qa_activity_picture
+            ON FIND_IN_SET(qa_activity_picture.picture_id, REPLACE(REPLACE(qa_transaction.activity_interest_id, '[', ''), ']', ''))
+        GROUP BY
+            qa_transaction.qa_transaction_id,
+            qa_transaction.account_id,
+            qa_traveling.traveling_choice,
+            qa_distance.distance_km,
+            qa_transaction.budget,
+            qa_picture.theme,
+            qa_transaction.longitude,
+            qa_transaction.latitude;
+    `;
+
+    pool.query(query, function(err, results) {
+        if (err) {
+            console.error("Database error:", err);
+            res.status(500).json({ error: "Database query failed" });
+        } else {
+            res.json(results);
+        }
+    });
+});
 
 // ✅บันทึกข้อมูลคำตอบของ QA จาก User
 app.post('/qa_transaction', async (req, res) => {

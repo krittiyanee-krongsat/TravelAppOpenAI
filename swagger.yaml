@@ -8,6 +8,59 @@ servers:
     description: Local server
 paths:
   /qa_transaction:
+    get:
+      summary: ดึงข้อมูลทั้งหมดจาก qa_transaction
+      tags: [QA]
+      description: ดึงข้อมูลทั้งหมดจาก qa_transaction
+      responses:
+        200:
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        qa_transaction_id:
+                          type: integer
+                          description: รหัสธุรกรรม
+                        account_id:
+                          type: integer
+                          description: รหัสบัญชี
+                        traveling_choice:
+                          type: string
+                          description: ตัวเลือกการเดินทาง
+                        distance_km:
+                          type: number
+                          description: ระยะทาง
+                        budget:
+                          type: number
+                          description: งบประมาณ
+                        location_interest:
+                          type: string
+                          description: ชื่อสถานที่ที่สนใจ
+                        activity_interest:
+                          type: array
+                          items:
+                            type: string
+                          description: รายการกิจกรรมที่สนใจ
+                        longitude:
+                          type: number
+                          description: ลองจิจูด
+                        latitude:
+                          type: number
+                          description: ละติจูด
+        500:
+          description: เกิดข้อผิดพลาดในการประมวลผล
+
     post:
       summary: บันทึกข้อมูลคำตอบจากผู้ใช้
       tags: [QA]
@@ -40,7 +93,7 @@ paths:
                 activity_interest_id:
                   type: array
                   items:
-                    type: string
+                    type: integer
                   description: รหัสกิจกรรมที่สนใจ (เก็บเป็น Array)
       responses:
         200:
@@ -78,7 +131,7 @@ paths:
                       activity_interest_id:
                         type: array
                         items:
-                          type: string
+                          type: integer
         400:
           description: ข้อมูลไม่ครบถ้วน
         500:
