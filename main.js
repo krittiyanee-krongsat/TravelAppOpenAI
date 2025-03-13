@@ -109,7 +109,7 @@ async function getRecommendedPlaces(prompt) {
     return response.choices[0].message.content.split('\n');
 }*/
 
-// Test2 OpenAI
+// ✅Test2 OpenAI
 async function getRecommendedPlaces(data) {
     // ฟังก์ชันช่วยแปลงข้อมูลจากตัวเลขเป็นข้อความ
     function translateChoice(choice, type) {
@@ -306,7 +306,7 @@ async function getWikimediaImage(locationName) {
     }
 }*/
 
-// ฟังก์ชันบันทึกผลลัพธ์ลงใน qa_results
+// ✅ฟังก์ชันบันทึกผลลัพธ์ลงใน qa_results
 async function saveResultsToDb(results, account_id) {
     const query = `
         INSERT INTO qa_results 
@@ -437,6 +437,20 @@ app.post('/qa_transaction', async (req, res) => {
         console.error("Error saving transaction:", error);
         res.status(500).json({ success: false, error: "Internal server error." });
     }
+});
+
+// ✅ดึงข้อมูล qa_results
+app.get('/qa_results', async (req, res) => {
+    const query = `SELECT * FROM qa_results`;
+
+    pool.query(query, function(err, results) {
+        if (err) {
+            console.error("Database error:", err);
+            res.status(500).json({ error: "Database query failed" });
+        } else {
+            res.json(results);
+        }
+    });
 });
 
 /*

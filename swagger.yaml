@@ -29,14 +29,13 @@ paths:
                     type: string
                   data:
                     type: array
-                    items:
-                      $ref: '#/components/schemas/QATransaction'
+
         500:
           description: เกิดข้อผิดพลาดในการประมวลผล
     post:
       summary: บันทึกข้อมูลคำตอบจากผู้ใช้
       tags: [QA]
-      description: บันทึกข้อมูลคำตอบจากผู้ใช้ลงในตาราง qa_transaction
+      description: บันทึกข้อมูลคำตอบจากผู้ใช้ลงในตาราง qa_transaction และประมวลผลด้วย openAI ส่งผลลัพธ์ไปยัง qa_results  
       requestBody:
         required: true
         content:
@@ -108,3 +107,23 @@ paths:
           description: ข้อมูลไม่ครบถ้วน
         500:
           description: เกิดข้อผิดพลาดในการประมวลผล
+  
+  /qa_results:
+    get:
+      summary: ดึงข้อมูลทั้งหมดจาก qa_results
+      tags: [QA Results]
+      description: ดึงข้อมูลทั้งหมดจาก qa_results
+      responses:
+        200:
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
