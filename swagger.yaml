@@ -6,6 +6,9 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local server
+tags:
+  - name: QA
+    description: API สำหรับจัดการข้อมูลคำตอบและคำแนะนำการท่องเที่ยว
 paths:
   /qa_transaction:
     get:
@@ -27,40 +30,9 @@ paths:
                   data:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        qa_transaction_id:
-                          type: integer
-                          description: รหัสธุรกรรม
-                        account_id:
-                          type: integer
-                          description: รหัสบัญชี
-                        traveling_choice:
-                          type: string
-                          description: ตัวเลือกการเดินทาง
-                        distance_km:
-                          type: number
-                          description: ระยะทาง
-                        budget:
-                          type: number
-                          description: งบประมาณ
-                        location_interest:
-                          type: string
-                          description: ชื่อสถานที่ที่สนใจ
-                        activity_interest:
-                          type: array
-                          items:
-                            type: string
-                          description: รายการกิจกรรมที่สนใจ
-                        longitude:
-                          type: number
-                          description: ลองจิจูด
-                        latitude:
-                          type: number
-                          description: ละติจูด
+                      $ref: '#/components/schemas/QATransaction'
         500:
           description: เกิดข้อผิดพลาดในการประมวลผล
-
     post:
       summary: บันทึกข้อมูลคำตอบจากผู้ใช้
       tags: [QA]
