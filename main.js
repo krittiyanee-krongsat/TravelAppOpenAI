@@ -110,26 +110,35 @@ function getLongdoMapUrl(latitude, longitude) {
     return `https://map.longdo.com/api/?lat=${latitude}&lon=${longitude}&zoom=15&width=400&height=300`;
 }*/
 
-/*// ฟังก์ชันบันทึกผลลัพธ์ลงใน qa_results
+// ฟังก์ชันบันทึกผลลัพธ์ลงใน qa_results
 async function saveResultsToDb(results) {
-    const query = `
-        INSERT INTO qa_results 
-        (account_id, results_img_url, results_location_name, results_open_day, results_location, results_business_hours, results_description, results_distance)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    const query = 
+        `INSERT INTO qa_results 
+        (account_id, event_name, event_description, start_date, end_date, results_location, results_img_url, time_schedule, recommended_location, distance)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    for (const result of results) {
-        await pool.promise().execute(query, [
-            result.account_id,
-            result.results_img_url,
-            result.results_location_name,
-            result.results_open_day,
-            result.results_location,
-            result.results_business_hours,
-            result.results_description,
-            result.results_distance,
-        ]);
+    try {
+        for (const result of results) {
+            await pool.promise().execute(query, [
+                result.account_id,
+                result.event_name,
+                result.event_description,
+                result.start_date,
+                result.end_date,
+                result.results_location,
+                result.results_img_url,
+                result.time_schedule,
+                result.recommended_location,
+                result.distance
+            ]);
+        }
+        console.log("Results saved successfully!");
+    } catch (error) {
+        console.error("Error saving results to database:", error);
+        // สามารถเลือกที่จะ throw error หรือจัดการข้อผิดพลาดในแบบอื่น
+        throw error; // หรือจัดการข้อผิดพลาดตามที่คุณต้องการ
     }
-}*/
+}
 
 // ✅ดึงข้อมูล qa_transaction
 app.get('/qa_transaction', async (req, res) => {
