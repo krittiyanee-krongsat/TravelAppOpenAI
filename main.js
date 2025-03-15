@@ -221,9 +221,9 @@ async function getRecommendedPlaces(data) {
     try {
         // เรียกใช้ OpenAI API
         const response = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4o",
             messages: [{ role: "user", content: prompt }],
-            max_tokens: 5000
+            max_tokens: 2000
         });
     
         // ตรวจสอบ response ก่อนใช้
