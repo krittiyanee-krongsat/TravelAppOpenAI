@@ -171,6 +171,91 @@ async function getRecommendedPlaces(data) {
         activity_interest_id: translateChoice(data.activity_interest_id, 'activity_interest_id')
     };
 
+    // ฟังก์ชันแปลงชื่อสถานที่จากภาษาไทยเป็นภาษาอังกฤษ
+    async function translateToEnglish(thaiName) {
+        try {
+            // ใช้ OpenAI API เพื่อแปลชื่อสถานที่
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [{ 
+                    role: "user", 
+                    content: `แปลชื่อสถานที่ท่องเที่ยวในกรุงเทพฯ นี้เป็นภาษาอังกฤษ (ให้ตอบเฉพาะชื่อภาษาอังกฤษเท่านั้น ไม่ต้องมีข้อความอื่น): ${thaiName}` 
+                }],
+                max_tokens: 1000
+            });
+            
+            // ดึงคำตอบและตัดช่องว่าง
+            const englishName = response.choices[0].message?.content?.trim() || thaiName;
+            console.log(`Translated: ${thaiName} -> ${englishName}`);
+            return englishName;
+        } catch (error) {
+            console.error("Error translating place name:", error);
+            return thaiName; // หากแปลไม่สำเร็จ ให้ใช้ชื่อเดิม
+        }
+    }
+
+    // ฟังก์ชันดึงรูปภาพจาก Wikimedia API
+    async function getWikimediaImage(placeName) {
+        try {
+            // แปลชื่อสถานที่เป็นภาษาอังกฤษก่อน
+            const englishName = await translateToEnglish(placeName);
+            
+            // สร้างคำค้นหาที่เฉพาะเจาะจงมากขึ้น
+            const searchTerms = [
+                `${englishName} Bangkok Thailand`,
+                `${englishName} Bangkok`,
+                `${englishName} Thailand tourism`,
+                englishName
+            ];
+            
+            // ลองค้นหาด้วยคำค้นหาต่างๆ จนกว่าจะพบรูปภาพ
+            for (const searchTerm of searchTerms) {
+                // สร้าง URL สำหรับ API request
+                const encodedSearchTerm = encodeURIComponent(searchTerm);
+                const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodedSearchTerm}&srnamespace=6&format=json&origin=*`;
+                
+                // ส่ง request ไปยัง Wikimedia API
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                // ตรวจสอบว่ามีผลลัพธ์หรือไม่
+                if (data.query && data.query.search && data.query.search.length > 0) {
+                    // ดึงชื่อไฟล์ภาพจากผลลัพธ์แรก
+                    const fileName = data.query.search[0].title.replace('File:', '');
+                    
+                    // ตรวจสอบความเกี่ยวข้องของรูปภาพ
+                    if (fileName.toLowerCase().includes(englishName.toLowerCase())) {
+                        // สร้าง URL สำหรับรูปภาพ (ดึงข้อมูล URL จริงของรูปภาพ)
+                        const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+                        
+                        const imageResponse = await fetch(imageInfoUrl);
+                        const imageData = await imageResponse.json();
+                        
+                        // ดึง URL ของรูปภาพ
+                        const pages = imageData.query.pages;
+                        const pageId = Object.keys(pages)[0];
+                        
+                        if (pages[pageId].imageinfo && pages[pageId].imageinfo.length > 0) {
+                            console.log(`Found image for ${placeName} using search term: ${searchTerm}`);
+                            return pages[pageId].imageinfo[0].url;
+                        }
+                    }
+                }
+            }
+            
+            // หากไม่พบรูปภาพในทุกคำค้นหา ให้ใช้รูปภาพตัวอย่าง
+            console.log(`No image found for ${placeName}`);
+            return `https://f.ptcdn.info/187/024/000/1412581961-PantipPatr-o.jpg`;
+        } catch (error) {
+            console.error("Error fetching Wikimedia image:", error);
+            // กรณีเกิดข้อผิดพลาด ให้ใช้รูปภาพตัวอย่าง
+            return `https://f.ptcdn.info/187/024/000/1412581961-PantipPatr-o.jpg`;
+        }
+    }
+
+    // เก็บรูปภาพที่ใช้แล้วเพื่อป้องกันการซ้ำซ้อน
+    const usedImages = new Set();
+
     // สร้าง prompt เพื่อขอคำแนะนำจาก OpenAI
     const prompt = `
     คุณได้เลือกคำตอบดังนี้:
@@ -180,48 +265,19 @@ async function getRecommendedPlaces(data) {
     - สถานที่ที่สนใจ: ${translatedData.location_interest_id}
     - กิจกรรมที่สนใจ: ${translatedData.activity_interest_id}
 
-    โปรดแนะนำสถานที่ท่องเที่ยวในกรุงเทพมหานครที่เหมาะสม 5 สถานที่ โดยระบุข้อมูลแต่ละสถานที่ดังนี้:
+    โปรดแนะนำสถานที่ท่องเที่ยวในกรุงเทพมหานครที่เหมาะสม 5 สถานที่เท่านั้น โดยระบุข้อมูลแต่ละสถานที่ดังนี้:
     1. ชื่อสถานที่ (event_name): <ชื่อสถานที่>
        รายละเอียดสถานที่ (event_description): <รายละเอียดสั้นๆ เกี่ยวกับสถานที่>
        ที่ตั้งสถานที่ (results_location): <ที่ตั้งสถานที่>
        วันเปิดบริการ (open_day): <วันเปิดบริการ>
        เวลาเปิด-ปิด (time_schedule): <เวลาเปิด-ปิด>
        ระยะทางจากผู้ใช้ (distance): <ระยะทางจากผู้ใช้>
-       ลิงก์รูปภาพ (results_img_url): <ลิงก์รูปภาพ>
-    2. ชื่อสถานที่ (event_name): <ชื่อสถานที่>
-       รายละเอียดสถานที่ (event_description): <รายละเอียดสั้นๆ เกี่ยวกับสถานที่>
-       ที่ตั้งสถานที่ (results_location): <ที่ตั้งสถานที่>
-       วันเปิดบริการ (open_day): <วันเปิดบริการ>
-       เวลาเปิด-ปิด (time_schedule): <เวลาเปิด-ปิด>
-       ระยะทางจากผู้ใช้ (distance): <ระยะทางจากผู้ใช้>
-       ลิงก์รูปภาพ (results_img_url): <ลิงก์รูปภาพ>
-    3. ชื่อสถานที่ (event_name): <ชื่อสถานที่>
-       รายละเอียดสถานที่ (event_description): <รายละเอียดสั้นๆ เกี่ยวกับสถานที่>
-       ที่ตั้งสถานที่ (results_location): <ที่ตั้งสถานที่>
-       วันเปิดบริการ (open_day): <วันเปิดบริการ>
-       เวลาเปิด-ปิด (time_schedule): <เวลาเปิด-ปิด>
-       ระยะทางจากผู้ใช้ (distance): <ระยะทางจากผู้ใช้>
-       ลิงก์รูปภาพ (results_img_url): <ลิงก์รูปภาพ>
-    4. ชื่อสถานที่ (event_name): <ชื่อสถานที่>
-       รายละเอียดสถานที่ (event_description): <รายละเอียดสั้นๆ เกี่ยวกับสถานที่>
-       ที่ตั้งสถานที่ (results_location): <ที่ตั้งสถานที่>
-       วันเปิดบริการ (open_day): <วันเปิดบริการ>
-       เวลาเปิด-ปิด (time_schedule): <เวลาเปิด-ปิด>
-       ระยะทางจากผู้ใช้ (distance): <ระยะทางจากผู้ใช้>
-       ลิงก์รูปภาพ (results_img_url): <ลิงก์รูปภาพ>
-    5. ชื่อสถานที่ (event_name): <ชื่อสถานที่>
-       รายละเอียดสถานที่ (event_description): <รายละเอียดสั้นๆ เกี่ยวกับสถานที่>
-       ที่ตั้งสถานที่ (results_location): <ที่ตั้งสถานที่>
-       วันเปิดบริการ (open_day): <วันเปิดบริการ>
-       เวลาเปิด-ปิด (time_schedule): <เวลาเปิด-ปิด>
-       ระยะทางจากผู้ใช้ (distance): <ระยะทางจากผู้ใช้>
-       ลิงก์รูปภาพ (results_img_url): <ลิงก์รูปภาพ>
     `;
 
     try {
         // เรียกใช้ OpenAI API
         const response = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4o",
             messages: [{ role: "user", content: prompt }],
             max_tokens: 5000
         });
@@ -239,19 +295,37 @@ async function getRecommendedPlaces(data) {
         const recommendations = recommendation.split('\n\n').filter(rec => rec.trim() !== '');
     
         // สร้างผลลัพธ์สำหรับแต่ละสถานที่
-        const results = recommendations.map((rec, index) => {
+        const results = [];
+        
+        // วนลูปเพื่อดึงรูปภาพสำหรับแต่ละสถานที่
+        for (let i = 0; i < recommendations.length; i++) {
+            const rec = recommendations[i];
             const lines = rec.split('\n');
-            const eventName = lines[0]?.split(': ')[1]?.trim() || `สถานที่ ${index + 1}`;
+            const eventName = lines[0]?.split(': ')[1]?.trim() || `สถานที่ ${i + 1}`;
             const eventDescription = lines[1]?.split(': ')[1]?.trim() || 'ไม่มีรายละเอียด';
             const resultsLocation = lines[2]?.split(': ')[1]?.trim() || 'ไม่ระบุที่ตั้ง';
             const openDay = lines[3]?.split(': ')[1]?.trim() || 'เปิดบริการทุกวัน';
             const timeSchedule = lines[4]?.split(': ')[1]?.trim() || '10:00-22:00';
             const distance = lines[5]?.split(': ')[1]?.trim() || translatedData.distance_id;
-            const resultsImgUrl = lines[6]?.split(': ')[1]?.trim() || 'https://via.placeholder.com/400x200?text=No+Image+Found';
+            
+            // ดึงรูปภาพจาก Wikimedia API โดยใช้ชื่อสถานที่
+            let resultsImgUrl = await getWikimediaImage(eventName);
+            
+            // ตรวจสอบว่ารูปภาพนี้ถูกใช้แล้วหรือไม่
+            let attemptCount = 0;
+            while (usedImages.has(resultsImgUrl) && attemptCount < 3) {
+                console.log(`Image duplicate detected for ${eventName}, trying alternative...`);
+                // ลองค้นหาอีกครั้งโดยเพิ่มคำอื่นๆ
+                resultsImgUrl = await getWikimediaImage(eventName + " attraction " + attemptCount);
+                attemptCount++;
+            }
+            
+            // เพิ่มรูปภาพที่ใช้แล้วเข้าไปในเซต
+            usedImages.add(resultsImgUrl);
     
             // กำหนดข้อมูลแต่ละสถานที่
-            return {
-                results_id: index + 1, // เพิ่ม results_id
+            results.push({
+                results_id: i + 1,
                 event_name: eventName,
                 event_description: eventDescription,
                 open_day: openDay,
@@ -259,52 +333,14 @@ async function getRecommendedPlaces(data) {
                 results_location: resultsLocation,
                 results_img_url: resultsImgUrl,
                 distance: distance
-            };
-        });
-    
+            });
+        }
         return results;
     } catch (error) {
         console.error("Error fetching recommendations:", error);
         throw error;
     }
 }
-/*// ฟังก์ชันสร้าง URL รูปภาพจาก Longdo Map API
-function getLongdoMapUrl(latitude, longitude) {
-    return `https://map.longdo.com/api/?lat=${latitude}&lon=${longitude}&zoom=15&width=400&height=300`;
-}*/
-
-/*
-// ฟังก์ชันค้นหารูปภาพจาก Wikimedia
-async function getWikimediaImage(locationName) {
-    try {
-        // เตรียม URL สำหรับ API ค้นหารูปภาพ
-        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=original&generator=search&gsrsearch=${encodeURIComponent(locationName)}&gsrlimit=1`;
-
-        // ดึงข้อมูลจาก Wikimedia API
-        const response = await fetch(searchUrl);
-        const data = await response.json();
-
-        // ตรวจสอบว่ามีผลลัพธ์หรือไม่
-        if (data.query && data.query.pages) {
-            const pages = Object.values(data.query.pages);
-            if (pages.length > 0 && pages[0].original) {
-                return pages[0].original.source; // คืนค่า URL ของภาพแรกที่พบ
-            }
-        }
-
-        // ❌ ถ้าไม่พบรูปภาพ ให้ลองตัดคำบางคำออก แล้วค้นหาใหม่
-        const alternativeName = locationName.split(' ')[0]; // ลองใช้แค่คำแรกของชื่อสถานที่
-        if (alternativeName !== locationName) {
-            return await getWikimediaImage(alternativeName); // ค้นหาใหม่
-        }
-
-        // ❌ ถ้าไม่มีภาพ ให้คืน Placeholder Image
-        return "https://via.placeholder.com/400x200?text=No+Image+Found";
-    } catch (error) {
-        console.error("Error fetching Wikimedia image:", error);
-        return "https://via.placeholder.com/400x200?text=No+Image+Found"; // กรณีเกิดข้อผิดพลาด
-    }
-}*/
 
 // ✅ฟังก์ชันบันทึกผลลัพธ์ลงใน qa_results
 async function saveResultsToDb(results, account_id) {
