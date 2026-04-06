@@ -1,3 +1,4 @@
+const { Sequelize } = require('sequelize');
 const dotenv = require("dotenv");
 dotenv.config();
 const mysql = require('mysql2');
@@ -10,9 +11,6 @@ const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const fs = require('fs');
 const YAML = require('yaml');
-const { connect } = require("http2");
-const axios = require("axios");
-const { application } = require("express");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -28,7 +26,7 @@ app.use(cors({
     origin: 'http://your-trusted-frontend-domain.com', // เปลี่ยนเป็นโดเมนของ Frontend ที่คุณใช้
     methods: ['GET', 'POST'],
 }));
-app.use(morgan('combined'));
+app.use(morgan('dev'));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -37,17 +35,17 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Database Connection Pool
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-});
-pool.query = util.promisify(pool.query);
+// Database Connection
+const sequelize = new Sequelize(
+    process.env.DB_NAME, 
+    process.env.DB_USER, 
+    process.env.DB_PASSWORD,
+    {
+        host: process.env.DB_HOST,
+        dialect: 'mysql',
+        logging: false,
+    }
+);
 
 // OpenAI Instance
 const openai = new OpenAI({
@@ -469,43 +467,51 @@ async function saveResultsToDb(results, account_id) {
 
 // ✅ดึงข้อมูล qa_transaction
 app.get('/qa_transaction', async (req, res) => {
-    const query = `
-         SELECT
-            qa_transaction.qa_transaction_id,
-            qa_transaction.account_id,
-            qa_traveling.traveling_choice,
-            qa_distance.distance_km,
-            qa_transaction.budget,
-            qa_picture.theme AS location_interest,
-            GROUP_CONCAT(qa_activity_picture.theme) AS activity_interest,
-            qa_transaction.longitude,
-            qa_transaction.latitude
-        FROM qa_transaction
-        LEFT JOIN qa_traveling ON qa_transaction.trip_id = qa_traveling.traveling_id
-        LEFT JOIN qa_distance ON qa_transaction.distance_id = qa_distance.distance_id
-        LEFT JOIN qa_picture ON qa_transaction.location_interest_id = qa_picture.picture_id
-        LEFT JOIN qa_picture AS qa_activity_picture
-            ON FIND_IN_SET(qa_activity_picture.picture_id, REPLACE(REPLACE(qa_transaction.activity_interest_id, '[', ''), ']', ''))
-        GROUP BY
-            qa_transaction.qa_transaction_id,
-            qa_transaction.account_id,
-            qa_traveling.traveling_choice,
-            qa_distance.distance_km,
-            qa_transaction.budget,
-            qa_picture.theme,
-            qa_transaction.longitude,
-            qa_transaction.latitude;
-    `;
+    try {
+        const query = `
+            SELECT
+                qa_transaction.qa_transaction_id,
+                qa_transaction.account_id,
+                qa_traveling.traveling_choice,
+                qa_distance.distance_km,
+                qa_value.value_money,
+                qa_picture.theme AS location_interest,
+                GROUP_CONCAT(qa_activity.activity_name ORDER BY qa_activity.activity_name) AS activity_interest,
+                qa_emotional.emotional_name,
+                qa_transaction.longitude,
+                qa_transaction.latitude
+            FROM qa_transaction
+            LEFT JOIN qa_traveling ON qa_transaction.trip_id = qa_traveling.traveling_id
+            LEFT JOIN qa_distance ON qa_transaction.distance_id = qa_distance.distance_id
+            LEFT JOIN qa_picture ON qa_transaction.location_interest_id = qa_picture.picture_id
+            LEFT JOIN qa_activity 
+                ON FIND_IN_SET(qa_activity.activity_id, REPLACE(REPLACE(qa_transaction.activity_id, '[', ''), ']', ''))
+            LEFT JOIN qa_emotional ON qa_transaction.emotional_id = qa_emotional.emotional_id
+            LEFT JOIN qa_value ON qa_transaction.value_id = qa_value.value_id
+            GROUP BY
+                qa_transaction.qa_transaction_id,
+                qa_transaction.account_id,
+                qa_traveling.traveling_choice,
+                qa_distance.distance_km,
+                qa_value.value_money,
+                qa_picture.theme,
+                qa_emotional.emotional_name,
+                qa_transaction.longitude,
+                qa_transaction.latitude;
+        `;
 
-    pool.query(query, function(err, results) {
-        if (err) {
-            console.error("Database error:", err);
-            res.status(500).json({ error: "Database query failed" });
-        } else {
-            res.json(results);
-        }
-    });
+        const results = await sequelize.query(query, {
+            type: Sequelize.QueryTypes.SELECT
+        });
+
+        res.json({ success: true, data: results });
+
+    } catch (err) {
+        console.error("Database error:", err);
+        res.status(500).json({ success: false, error: "Database query failed" });
+    }
 });
+
 
 // ✅บันทึกข้อมูลคำตอบของ QA จาก User
 app.post('/qa_transaction', async (req, res) => {

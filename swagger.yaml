@@ -10,6 +10,7 @@ tags:
   - name: QA
     description: API สำหรับจัดการข้อมูลคำตอบและคำแนะนำการท่องเที่ยว
 paths:
+   #----------------------------- qa_transaction -----------------------------#
   /qa_transaction:
     get:
       summary: ดึงข้อมูลทั้งหมดจาก qa_transaction
@@ -55,17 +56,20 @@ paths:
                 distance_id:
                   type: integer
                   description: รหัสระยะทาง
-                budget:
-                  type: number
+                value_id:
+                  type: integer
                   description: งบประมาณ
                 location_interest_id:
                   type: number
                   description: รหัสสถานที่ที่สนใจ
-                activity_interest_id:
+                activity_id:
                   type: array
                   items:
                     type: integer
                   description: รหัสกิจกรรมที่สนใจ (เก็บเป็น Array)
+                emotional_id:
+                  type: integer
+                  description: รหัสอารมณ์ที่สนใจ
       responses:
         200:
           description: สำเร็จ
@@ -95,19 +99,23 @@ paths:
                         type: integer
                       distance_id:
                         type: integer
-                      budget:
-                        type: number
+                      value_id:
+                        type: integer
                       location_interest_id:
                         type: number
-                      activity_interest_id:
+                      activity_id:
                         type: array
                         items:
                           type: integer
+                      emotional_id:
+                        type: integer
         400:
           description: ข้อมูลไม่ครบถ้วน
         500:
           description: เกิดข้อผิดพลาดในการประมวลผล
-  
+
+ #----------------------------- qa_results -----------------------------#
+
   /qa_results:
     get:
       summary: ดึงข้อมูลทั้งหมดจาก qa_results
