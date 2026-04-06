@@ -113,6 +113,7 @@ async function getRecommendedPlaces(prompt) {
 async function getRecommendedPlaces(data) {
     // ฟังก์ชันช่วยแปลงข้อมูลจากตัวเลขเป็นข้อความ
     function translateChoice(choice, type) {
+        // (ไม่มีการเปลี่ยนแปลงในส่วนนี้)
         switch (type) {
             case 'trip_id':
                 switch (choice) {
@@ -120,14 +121,17 @@ async function getRecommendedPlaces(data) {
                     case 2: return 'เดินทางกับครอบครัว';
                     case 3: return 'เดินทางกับแฟน';
                     case 4: return 'เดินทางกับเพื่อน';
+                    case 5: return 'เดินทางกับเพื่อนร่วมงาน';
+                    case 6: return 'เดินทางกับเด็ก/ผู้สูงอายุ';
+                    case 7: return 'เดินทางกับสัตว์เลี้ยง';
                     default: return 'ไม่ระบุ';
                 }
             case 'distance_id':
                 switch (choice) {
-                    case 1: return '0-5 กิโลเมตร';
-                    case 2: return '5-10 กิโลเมตร';
-                    case 3: return '10-15 กิโลเมตร';
-                    case 4: return '15-20 กิโลเมตร';
+                    case 1: return '0-50 กิโลเมตร';
+                    case 2: return '51-100 กิโลเมตร';
+                    case 3: return '101-200 กิโลเมตร';
+                    case 4: return 'มากกว่า 200 กิโลเมตร';
                     default: return 'ไม่ระบุ';
                 }
             case 'location_interest_id':
@@ -136,27 +140,46 @@ async function getRecommendedPlaces(data) {
                     case 2: return 'สวนสาธารณะ';
                     case 3: return 'สวนสนุกและสวนน้ำ';
                     case 4: return 'งานศิลปะและนิทรรศการ';
-                    case 5: return 'สปาและออนเซ็น';
-                    case 6: return 'ห้างสรรพสินค้า';
-                    case 7: return 'ร้านอาหารและเครื่องดื่ม';
+                    case 5: return 'ธรรมชาติ';
+                    case 6: return 'กิจกรรมและผญจภัย';
+                    case 7: return 'ตลาดนัดและถนนคนเดิน';
                     case 8: return 'วัดและสถานที่โบราณ';
                     default: return 'ไม่ระบุ';
                 }
-            case 'activity_interest_id':
+            case 'activity_id':
                 if (!Array.isArray(choice)) return 'ไม่ระบุ';
                 return choice.map(activity => {
                     switch (activity) {
-                        case 1: return 'คาเฟ่และกิจกรรมต่างๆ';
-                        case 2: return 'สวนสาธารณะ';
-                        case 3: return 'สวนสนุกและสวนน้ำ';
-                        case 4: return 'งานศิลปะและนิทรรศการ';
-                        case 5: return 'สปาและออนเซ็น';
-                        case 6: return 'ห้างสรรพสินค้า';
-                        case 7: return 'ร้านอาหารและเครื่องดื่ม';
-                        case 8: return 'วัดและสถานที่โบราณ';
+                        case 1: return 'ชิมอาหารริมทางและช้อปปิ้งในตลาด';
+                        case 2: return 'กิจกรรมผ่อนคลายและฟื้นฟูร่างกาย';
+                        case 3: return 'กิจกรรมผจญภัย';
+                        case 4: return 'กิจกรรมสำรวจธรรมชาติ';
+                        case 5: return 'กิจกรรมทางวัฒนธรรม';
+                        case 6: return 'กิจกรรมทางน้ำ';
                         default: return 'ไม่ระบุ';
                     }
                 }).join(', ');
+            case 'emotional_id':
+                switch (choice) {
+                    case 1: return 'รู้สึกมีความรัก';
+                    case 2: return 'รู้สึกมีความสุข';
+                    case 3: return 'รู้สึกสบายๆ';
+                    case 4: return 'รู้สึกเศร้า';
+                    case 5: return 'รู้สึกเหนื่อยล้า';
+                    case 6: return 'รู้สึกหิว';
+                    case 7: return 'รู้สึกเซ็ง';
+                    case 8: return 'รู้สึกโกรธ';
+                    case 9: return 'รู้สึกเบื่อ';
+                    case 10: return 'รู้สึกเพิ่งเสร็จงาน';
+                    default: return 'ไม่ระบุ';
+                }
+            case 'value_id':
+                switch (choice) {
+                    case 1: return '100-500 บาท';
+                    case 2: return '550-1,000 บาท';
+                    case 3: return '1,500-2,000 บาท';
+                    case 4: return '5,500-10,000 บาท';
+                }
             default:
                 return choice || 'ไม่ระบุ';
         }
@@ -166,9 +189,10 @@ async function getRecommendedPlaces(data) {
     const translatedData = {
         trip_id: translateChoice(data.trip_id, 'trip_id'),
         distance_id: translateChoice(data.distance_id, 'distance_id'),
-        budget: data.budget || 'ไม่ระบุ',
+        value_id: translateChoice(data.value_id, 'value_id'),
         location_interest_id: translateChoice(data.location_interest_id, 'location_interest_id'),
-        activity_interest_id: translateChoice(data.activity_interest_id, 'activity_interest_id')
+        activity_id: translateChoice(data.activity_id, 'activity_id'),
+        emotional_id: translateChoice(data.emotional_id, 'emotional_id'),
     };
 
     // ฟังก์ชันแปลงชื่อสถานที่จากภาษาไทยเป็นภาษาอังกฤษ
@@ -179,7 +203,7 @@ async function getRecommendedPlaces(data) {
                 model: "gpt-4o",
                 messages: [{ 
                     role: "user", 
-                    content: `แปลชื่อสถานที่ท่องเที่ยวในกรุงเทพฯ นี้เป็นภาษาอังกฤษ (ให้ตอบเฉพาะชื่อภาษาอังกฤษเท่านั้น ไม่ต้องมีข้อความอื่น): ${thaiName}` 
+                    content: `แปลชื่อสถานที่ท่องเที่ยวในประเทศไทยนี้เป็นภาษาอังกฤษ (ให้ตอบเฉพาะชื่อภาษาอังกฤษเท่านั้น ไม่ต้องมีข้อความอื่น): ${thaiName}` 
                 }],
                 max_tokens: 1000
             });
@@ -203,8 +227,8 @@ async function getRecommendedPlaces(data) {
             // สร้างคำค้นหาที่เฉพาะเจาะจงมากขึ้น
             const searchTerms = [
                 `${englishName} Bangkok Thailand`,
-                `${englishName} Bangkok`,
                 `${englishName} Thailand tourism`,
+                `${englishName} Thailand`,
                 englishName
             ];
             
@@ -224,7 +248,9 @@ async function getRecommendedPlaces(data) {
                     const fileName = data.query.search[0].title.replace('File:', '');
                     
                     // ตรวจสอบความเกี่ยวข้องของรูปภาพ
-                    if (fileName.toLowerCase().includes(englishName.toLowerCase())) {
+                    if (fileName.toLowerCase().includes(englishName.toLowerCase()) || 
+                        englishName.toLowerCase().includes(fileName.toLowerCase()) ||
+                        searchTerm.toLowerCase().includes(fileName.toLowerCase())) {
                         // สร้าง URL สำหรับรูปภาพ (ดึงข้อมูล URL จริงของรูปภาพ)
                         const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
                         
@@ -256,23 +282,30 @@ async function getRecommendedPlaces(data) {
     // เก็บรูปภาพที่ใช้แล้วเพื่อป้องกันการซ้ำซ้อน
     const usedImages = new Set();
 
-    // สร้าง prompt เพื่อขอคำแนะนำจาก OpenAI
+    // สร้าง prompt เพื่อขอคำแนะนำจาก OpenAI แบบเป็นกันเองมากขึ้น
     const prompt = `
-    คุณได้เลือกคำตอบดังนี้:
-    - ประเภทการเดินทาง: ${translatedData.trip_id}
-    - ระยะทาง: ${translatedData.distance_id}
-    - งบประมาณ: ${translatedData.budget} บาท
-    - สถานที่ที่สนใจ: ${translatedData.location_interest_id}
-    - กิจกรรมที่สนใจ: ${translatedData.activity_interest_id}
+    สวัสดี! ฉันกำลังหาที่เที่ยวสนุกๆ ในเมืองไทยอยู่พอดีเลย✨
 
-    โปรดแนะนำสถานที่ท่องเที่ยวในกรุงเทพมหานครที่เหมาะสม 5 สถานที่เท่านั้น โดยระบุข้อมูลแต่ละสถานที่ดังนี้:
-    1. ชื่อสถานที่ (event_name): <ชื่อสถานที่>
-       รายละเอียดสถานที่ (event_description): <รายละเอียดสั้นๆ เกี่ยวกับสถานที่>
-       ที่ตั้งสถานที่ (results_location): <ที่ตั้งสถานที่>
-       วันเปิดบริการ (open_day): <วันเปิดบริการ>
-       เวลาเปิด-ปิด (time_schedule): <เวลาเปิด-ปิด>
-       ระยะทางจากผู้ใช้ (distance): <ระยะทางจากผู้ใช้>
+    วันนี้ฉันรู้สึก${translatedData.emotional_id}มากๆ เลยอยากออกไปเที่ยวเปลี่ยนบรรยากาศสักหน่อย ตอนนี้ฉันอยู่ที่พิกัด ละติจูด ${data.latitude}, ลองจิจูด ${data.longitude} และอยากออกไปเที่ยวแบบ${translatedData.trip_id} ซึ่งฉันไม่อยากไปไกลมาก อยากไปในระยะ${translatedData.distance_id} ด้วยงบประมาณ${translatedData.value_id} ที่มีอยู่
+
+    ฉันชอบที่เที่ยวแนว${translatedData.location_interest_id} และมองหากิจกรรมแบบ${translatedData.activity_id} เป็นพิเศษ
+
+    ช่วยแนะนำ 5 สถานที่ที่คิดว่าเหมาะกับฉันที่สุดในตอนนี้หน่อยได้มั้ย? แต่ช่วยตอบแบบมีข้อมูลให้ฉันครบถ้วนเลยนะ ทั้งชื่อสถานที่ รายละเอียดน่าสนใจ ที่ตั้ง วันและเวลาเปิด-ปิด รวมถึงระยะทางจากฉันด้วย 
+
+    อ้อ! และเพื่อให้ฉันจัดการข้อมูลง่ายขึ้น ช่วยจัดรูปแบบให้เป็นแบบนี้นะ:
+
+    ชื่อสถานที่ (event_name): [ชื่อ]
+    รายละเอียดสั้นๆ (event_description): [ข้อมูลสั้นๆ ที่น่าสนใจ]
+    ที่ตั้ง (results_location): [สถานที่ตั้ง]
+    วันเปิด (open_day): [วันที่เปิดให้บริการ]
+    เวลาเปิด-ปิด (time_schedule): [เวลาทำการ]
+    ระยะทางจากฉัน (distance): [ระยะทางโดยประมาณ]
+
+    (แล้วก็ช่วยเว้นบรรทัดระหว่างแต่ละสถานที่ด้วยนะ)
+
+    แนะนำมา 5 ที่เท่านั้นนะ ไม่มากกว่าหรือน้อยกว่า และฉันขอเฉพาะสถานที่ในประเทศไทยที่อยู่ในระยะทางที่ฉันบอกไว้เท่านั้น และช่วยตอบเฉพาะข้อมูลตามรูปแบบด้านบนนะ ไม่ต้องเกริ่นนำหรือสรุปอะไรเพิ่มเติม ขอบคุณมากๆ เลย! 🙏💕
     `;
+    console.log("Prompt sent to OpenAI:", prompt); // ตรวจสอบ prompt ที่ส่งไป
 
     try {
         // เรียกใช้ OpenAI API
@@ -297,17 +330,66 @@ async function getRecommendedPlaces(data) {
         // สร้างผลลัพธ์สำหรับแต่ละสถานที่
         const results = [];
         
-        // วนลูปเพื่อดึงรูปภาพสำหรับแต่ละสถานที่
-        for (let i = 0; i < recommendations.length; i++) {
+        // แก้ไขรูปแบบการแยกวิเคราะห์ให้แม่นยำขึ้น
+        for (let i = 0; i < Math.min(recommendations.length, 5); i++) {
             const rec = recommendations[i];
-            const lines = rec.split('\n');
-            const eventName = lines[0]?.split(': ')[1]?.trim() || `สถานที่ ${i + 1}`;
-            const eventDescription = lines[1]?.split(': ')[1]?.trim() || 'ไม่มีรายละเอียด';
-            const resultsLocation = lines[2]?.split(': ')[1]?.trim() || 'ไม่ระบุที่ตั้ง';
-            const openDay = lines[3]?.split(': ')[1]?.trim() || 'เปิดบริการทุกวัน';
-            const timeSchedule = lines[4]?.split(': ')[1]?.trim() || '10:00-22:00';
-            const distance = lines[5]?.split(': ')[1]?.trim() || translatedData.distance_id;
+            const placeInfo = {};
             
+            // แยกข้อมูลแต่ละบรรทัดด้วยวิธีที่แม่นยำกว่า
+            const lines = rec.split('\n');
+            
+            // ประมวลผลแต่ละบรรทัด
+            for (const line of lines) {
+                // ใช้ regex เพื่อแยกชื่อฟิลด์และค่า
+                const match = line.match(/^(.+?)\s*:\s*(.+)$/);
+                if (match) {
+                    const fullField = match[1].trim();
+                    const value = match[2].trim();
+                    
+                    // แยกชื่อฟิลด์จากวงเล็บ
+                    const fieldMatch = fullField.match(/^(.+?)\s*\((.+?)\)$/);
+                    if (fieldMatch) {
+                        const fieldName = fieldMatch[2]; // เช่น event_name, event_description
+                        placeInfo[fieldName] = value;
+                    }
+                }
+            }
+            
+            // หากไม่พบชื่อสถานที่ จัดการข้อมูลตามแบบเดิม
+            if (!placeInfo.event_name) {
+                console.log("ไม่พบรูปแบบที่ถูกต้อง สำหรับสถานที่ที่", i + 1, "ข้อมูล:", rec);
+                
+                // ใช้วิธีการเดิมเป็น fallback
+                const eventName = lines[0]?.split(': ')[1]?.trim();
+                const eventDescription = lines[1]?.split(': ')[1]?.trim();
+                const resultsLocation = lines[2]?.split(': ')[1]?.trim();
+                const openDay = lines[3]?.split(': ')[1]?.trim();
+                const timeSchedule = lines[4]?.split(': ')[1]?.trim();
+                const distance = lines[5]?.split(': ')[1]?.trim();
+                
+                // ใส่ข้อมูลที่ได้กลับเข้าไปใน placeInfo
+                if (eventName) placeInfo.event_name = eventName;
+                if (eventDescription) placeInfo.event_description = eventDescription;
+                if (resultsLocation) placeInfo.results_location = resultsLocation;
+                if (openDay) placeInfo.open_day = openDay;
+                if (timeSchedule) placeInfo.time_schedule = timeSchedule;
+                if (distance) placeInfo.distance = distance;
+            }
+            
+            // ตรวจสอบว่ายังมีข้อมูลไม่ครบหรือไม่ และใส่ค่าเริ่มต้น
+            const eventName = placeInfo.event_name || "";
+            const eventDescription = placeInfo.event_description || "ไม่มีรายละเอียด";
+            const resultsLocation = placeInfo.results_location || "ไม่ระบุที่ตั้ง";
+            const openDay = placeInfo.open_day || "เปิดบริการทุกวัน";
+            const timeSchedule = placeInfo.time_schedule || "10:00-22:00";
+            const distance = placeInfo.distance || translatedData.distance_id;
+            
+            // ตรวจสอบว่ามีชื่อสถานที่หรือไม่
+            if (!eventName || eventName === "") {
+                console.log(`สถานที่ที่ ${i + 1} ไม่มีชื่อ ข้าม...`);
+                continue; // ข้ามสถานที่ที่ไม่มีชื่อ
+            }
+
             // ดึงรูปภาพจาก Wikimedia API โดยใช้ชื่อสถานที่
             let resultsImgUrl = await getWikimediaImage(eventName);
             
@@ -326,7 +408,7 @@ async function getRecommendedPlaces(data) {
             // กำหนดข้อมูลแต่ละสถานที่
             results.push({
                 results_id: i + 1,
-                event_name: eventName,
+                event_name: eventName, // ใช้ชื่อจริงที่ได้จาก AI
                 event_description: eventDescription,
                 open_day: openDay,
                 time_schedule: timeSchedule,
@@ -335,6 +417,21 @@ async function getRecommendedPlaces(data) {
                 distance: distance
             });
         }
+
+        // ตรวจสอบว่าได้ข้อมูลอย่างน้อย 1 สถานที่
+        if (results.length === 0) {
+            console.error("ไม่พบข้อมูลสถานที่ที่ถูกต้องจาก API");
+            throw new Error("Invalid place data format received from OpenAI API");
+        }
+
+        // จำกัดให้มีเฉพาะ 5 สถานที่
+        if (results.length > 5) {
+            results.splice(5); // ตัดให้เหลือเพียง 5 สถานที่
+        }
+        
+        // ล็อกข้อมูลก่อนส่งกลับ เพื่อตรวจสอบ
+        console.log("Final results:", JSON.stringify(results, null, 2));
+        
         return results;
     } catch (error) {
         console.error("Error fetching recommendations:", error);
@@ -412,64 +509,90 @@ app.get('/qa_transaction', async (req, res) => {
 
 // ✅บันทึกข้อมูลคำตอบของ QA จาก User
 app.post('/qa_transaction', async (req, res) => {
+    const transaction = await sequelize.transaction(); // Use transaction for the initial query
     try {
-        const { latitude, longitude, trip_id, distance_id, budget, location_interest_id, activity_interest_id } = req.body;
+        console.log("🟢 Start Transaction");
 
-        // ตรวจสอบข้อมูลที่จำเป็น
-        if (
-            !latitude || !longitude || !trip_id || !distance_id || !budget || !location_interest_id || !activity_interest_id
-        ) {
-            return res.status(400).json({ success: false, message: "Missing required fields." });
+        const { latitude, longitude, trip_id, distance_id, value_id, location_interest_id, activity_id, emotional_id } = req.body;
+
+        if (!latitude || !longitude || !trip_id || !distance_id || !value_id || !location_interest_id || !Array.isArray(activity_id), !emotional_id) {
+            return res.status(400).json({ success: false, message: "Missing or invalid required fields." });
         }
 
-        // ตรวจสอบให้แน่ใจว่า activity_interest_id เป็น Array
-        if (!Array.isArray(activity_interest_id)) {
-            return res.status(400).json({ success: false, message: "activity_interest_id must be an array." });
-        }
+        console.log("🟢 Data validated:", req.body);
 
-        // แปลง activity_interest_id เป็น JSON string
-        const activityInterestJSON = JSON.stringify(activity_interest_id);
-
-        // กำหนดค่า account_id เป็น 0
+        const activityInterestJSON = JSON.stringify(activity_id);
         let account_id = 0;
 
-        // บันทึกข้อมูลลงในฐานข้อมูล
-        const sql = 'INSERT INTO qa_transaction (account_id, latitude, longitude, trip_id, distance_id, budget, location_interest_id, activity_interest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-        const result = await pool.query(sql, [account_id, latitude, longitude, trip_id, distance_id, budget, location_interest_id, activityInterestJSON]);
+        // ✅ Insert the main transaction data
+        const sql = `
+            INSERT INTO qa_transaction (account_id, latitude, longitude, trip_id, distance_id, value_id, location_interest_id, activity_id, emotional_id) 
+            VALUES (:account_id, :latitude, :longitude, :trip_id, :distance_id, :value_id, :location_interest_id, :activity_id, :emotional_id)
+        `;
 
-        // ตรวจสอบว่าได้บันทึกข้อมูลหรือไม่
-        if (result.affectedRows > 0) {
-            // หลังจากบันทึกเสร็จให้ดึง account_id จากฐานข้อมูล
-            account_id = result.insertId;
+        const [result] = await sequelize.query(sql, {
+            replacements: { account_id, latitude, longitude, trip_id, distance_id, value_id, location_interest_id, activity_id: activityInterestJSON, emotional_id },
+            type: Sequelize.QueryTypes.INSERT,
+            transaction
+        });
 
-            // อัปเดต record ด้วย account_id ที่ถูกต้อง
-            const updateSql = 'UPDATE qa_transaction SET account_id = ? WHERE qa_transaction_id = ?';
-            await pool.query(updateSql, [account_id, result.insertId]);
+        if (result) {
+            account_id = result; // Get the account_id from the insert result
 
-            // ส่งข้อมูลไปประมวลผลด้วย OpenAI
-            const openAIResults = await getRecommendedPlaces({
-                latitude,
-                longitude,
-                trip_id,
-                distance_id,
-                budget,
-                location_interest_id,
-                activity_interest_id
+            // ✅ Update account_id in transaction
+            const updateSql = `UPDATE qa_transaction SET account_id = :account_id WHERE qa_transaction_id = :qa_transaction_id`;
+            await sequelize.query(updateSql, {
+                replacements: { account_id, qa_transaction_id: account_id },
+                type: Sequelize.QueryTypes.UPDATE,
+                transaction
             });
 
-            // บันทึกผลลัพธ์ลงใน qa_results
-            await saveResultsToDb(openAIResults, account_id);
+            // ✅ Commit the transaction for the main transaction insertion
+            await transaction.commit();
+            console.log("Transaction committed.");
 
+            // ✅ Now, handle OpenAI results separately
+            try {
+                const openAIResults = await getRecommendedPlaces({
+                    latitude,
+                    longitude,
+                    trip_id,
+                    distance_id,
+                    value_id,
+                    location_interest_id,
+                    activity_id,
+                    emotional_id
+                });
+
+                // You can use a separate transaction here if you want to keep the OpenAI results atomic
+                const newTransaction = await sequelize.transaction();
+
+                try {
+                    await saveResultsToDb(openAIResults, account_id, newTransaction);
+                    await newTransaction.commit(); // Commit the new transaction for OpenAI results
+                    console.log("OpenAI results saved and transaction committed.");
+                } catch (aiError) {
+                    console.error("Error saving OpenAI results:", aiError);
+                    await newTransaction.rollback(); // Rollback if OpenAI processing fails
+                }
+
+            } catch (aiError) {
+                console.error("OpenAI processing error:", aiError);
+            }
+
+            // ✅ Send the response
             res.json({
                 success: true,
                 message: "Transaction saved and account_id updated successfully!",
-                data: { account_id, latitude, longitude, trip_id, distance_id, budget, location_interest_id, activity_interest_id }
+                data: { account_id, latitude, longitude, trip_id, distance_id, value_id, location_interest_id, activity_id, emotional_id}
             });
         } else {
+            await transaction.rollback(); // Rollback if the main transaction fails
             res.status(500).json({ success: false, message: "Failed to save transaction." });
         }
 
     } catch (error) {
+        await transaction.rollback();
         console.error("Error saving transaction:", error);
         res.status(500).json({ success: false, error: "Internal server error." });
     }
@@ -477,16 +600,17 @@ app.post('/qa_transaction', async (req, res) => {
 
 // ✅ดึงข้อมูล qa_results
 app.get('/qa_results', async (req, res) => {
-    const query = `SELECT * FROM qa_results`;
+    try {
+        const query = `SELECT * FROM qa_results`;
 
-    pool.query(query, function(err, results) {
-        if (err) {
-            console.error("Database error:", err);
-            res.status(500).json({ error: "Database query failed" });
-        } else {
-            res.json(results);
-        }
-    });
+        // ใช้ async/await และ QueryTypes.SELECT
+        const results = await sequelize.query(query, { type: Sequelize.QueryTypes.SELECT });
+
+        res.json(results);
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ error: "Database query failed" });
+    }
 });
 
 /*
